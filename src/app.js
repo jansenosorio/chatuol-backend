@@ -22,3 +22,43 @@ try {
 }
 
 const db = mongoClient.db()
+
+
+
+server.post("/participants", async (req, res) => {
+  const userParticipants = req.body
+  
+  const userSchema = joi.object({
+      name: joi.string().required()
+  })
+
+  const validation = userSchema.validate(userParticipants, { abortEarly: false })
+
+  if (validation.error) {
+      const errors = validation.error.details.map(detail => detail.message)
+      return res.status(422).send(errors)
+  }
+
+  const alreadyExists = await db.collection('participants').findOne({ name: userParticipants.name })
+  if (alreadyExists) return res.status(409).send('Usuário já cadastrado')
+
+  try {
+
+      await db.collection('participants').insertOne({ name: userParticipants.name, lastStatus: Date.now() })
+
+      await db.collection('messages').insertOne(
+          {
+              from: userParticipants.name,
+              to: 'Todos',
+              text: 'entra na sala...',
+              type: 'status',
+              time: dayjs().format('HH:mm:ss')
+          })
+
+      res.sendStatus(201)
+
+  } catch (error) {
+      res.status(500).send('Não foi possivel se cadastrar')
+  }
+
+})
