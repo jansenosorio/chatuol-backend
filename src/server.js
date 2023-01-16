@@ -74,3 +74,49 @@ server.get("/participants", async (req, res) => {
       console.log(error.message)
   }
 })
+
+server.post('/messages', async (req, res) => {
+    const { user } = req.headers
+    const mensage = req.body
+
+    if (!user || user === '') return res.sendStatus(422)
+
+    try {
+        const userExist = await db.collection('participants').findOne({ name: user })
+        if (!userExist) return db.status(422).send('Você não está logado!')
+
+    } catch (error) {
+        return res.sendStatus(422)
+    }
+
+    const mensageSchema = joi.object({
+        to: joi.string().required(),
+        text: joi.string().required(),
+        type: joi.string().valid('message', 'private_message').required()
+    })
+
+    const validation = mensageSchema.validate(mensage, { abortEarly: false })
+
+    if (validation.error) {
+        const errors = validation.error.details.map(detail => detail.message)
+        return res.status(422).send(errors)
+    }
+
+    try {
+        await db.collection('messages').insertOne(
+            {
+                from: user,
+                to: mensage.to,
+                text: mensage.text,
+                type: mensage.type,
+                time: dayjs().format('HH:mm:ss')
+            }
+        )
+
+        return res.sendStatus(201)
+
+    } catch (error) {
+        return res.status(500).send('Não foi possível enviar mensagem')
+    }
+
+})
