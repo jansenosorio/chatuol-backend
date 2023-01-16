@@ -11,7 +11,7 @@ const server = express()
 server.use(cors())
 server.use(express.json())
 
-const mongoClient = new MongoClient(process.env.MONGO_URL)
+const mongoClient = new MongoClient(process.env.DATABASE_URL)
 
 try {
 
