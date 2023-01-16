@@ -10,7 +10,7 @@ const server = express()
 server.use(cors())
 server.use(express.json())
 
-const mongoClient = new MongoClient(process.env.DATABASE_URL)
+const mongoClient = new MongoClient(process.env.MONGO_URL)
 
 try {
 
@@ -40,7 +40,7 @@ server.post("/participants", async (req, res) => {
   }
 
   const alreadyExists = await db.collection('participants').findOne({ name: userParticipants.name })
-  if (alreadyExists) return res.status(409).send('Usuário já cadastrado')
+  if (alreadyExists) return res.status(409).send('Usuário já existe')
 
   try {
 
@@ -58,7 +58,19 @@ server.post("/participants", async (req, res) => {
       res.sendStatus(201)
 
   } catch (error) {
-      res.status(500).send('Não foi possivel se cadastrar')
+      res.status(500).send('Houve um erro ao se cadastrar')
   }
 
+})
+
+
+server.get("/participants", async (req, res) => {
+
+  try {
+      const users = await db.collection('participants').find().toArray()
+      res.send(users)
+
+  } catch (error) {
+      console.log(error.message)
+  }
 })
